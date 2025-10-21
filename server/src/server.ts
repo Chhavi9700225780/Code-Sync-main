@@ -360,8 +360,7 @@ server.listen(PORT, () => {
 })
 
 
-const MONGODB_URI = "mongodb+srv://gitauser:7PHYxxPPBNwG76Lr@cluster0.59tpxfd.mongodb.net/CodeSync?retryWrites=true&w=majority&appName=Cluster0"
-
+const MONGODB_URI = process.env.DATABASE_URL;
 if (!MONGODB_URI) {
     console.error('FATAL ERROR: DATABASE_URL is not defined in environment variables.');
    process.exit(1); // Exit if DB connection string is missing
