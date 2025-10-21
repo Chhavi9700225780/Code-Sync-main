@@ -3,6 +3,7 @@ import passport from 'passport';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import dotenv from 'dotenv';
 import User, { IUser } from '../models/User'; // Import your User model
+import { v4 as uuidv4 } from 'uuid'; // <-- Import uuid
 
 dotenv.config();
 
@@ -41,16 +42,18 @@ passport.use(new GitHubStrategy({
                 }
                 return done(null, user); // Pass user object to serializeUser
             } else {
-                // New user - create them in your database
-                // You might need a way to link this to your app's internal user ID
-                // For now, let's create a basic user
+                // --- FIX IS HERE: Provide appUserId ---
+                // New user - Generate a unique appUserId
+                const newAppUserId = uuidv4(); // Generate a unique ID
+
                 const newUser = new User({
-                    // appUserId: generateUniqueAppId(), // Generate or link an ID for your app
-                    username: username, // Consider if this should be unique or if you allow multiple GitHub accounts?
+                    appUserId: newAppUserId, // <-- Provide the required field
+                    username: username, // Using GitHub username for app username
                     githubId: githubId,
                     githubAccessToken: accessToken,
-                    // email: email, // Add email if needed
+                    // email: email, // You can add other fields from profile
                 });
+                // --- END FIX ---
                 await newUser.save();
                 console.log(`Created new user ${username} from GitHub login.`);
                 return done(null, newUser); // Pass new user object to serializeUser
