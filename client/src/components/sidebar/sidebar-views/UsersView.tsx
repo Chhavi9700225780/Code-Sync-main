@@ -9,7 +9,7 @@ import { GoSignOut } from "react-icons/go"
 import { IoShareOutline } from "react-icons/io5"
 import { LuCopy } from "react-icons/lu"
 import { useNavigate } from "react-router-dom"
-
+import { useEffect } from "react"
 import { useState } from "react"
 import {
     BsMic,
@@ -153,6 +153,47 @@ function UsersView() {
         })
     }
 const activeUserCount = self ? users.length + 1 : 0
+// --- NEW: Listen for Tab Visibility ---
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                console.log("Tab hidden - media might be paused by browser");
+                // Optional: You could potentially disable tracks here, but browsers often do it anyway
+                // localStream?.getTracks().forEach(track => track.enabled = false);
+            } else {
+                console.log("Tab visible - checking/re-enabling media tracks");
+                // Ensure tracks are enabled if they exist
+                if (localStream) {
+                    localStream.getAudioTracks().forEach(track => {
+                        // Re-enable based on your component's state (isMicOn)
+                        track.enabled = isMicOn;
+                    });
+                    localStream.getVideoTracks().forEach(track => {
+                        // Re-enable based on your component's state (isCameraOn)
+                        track.enabled = isCameraOn;
+                    });
+                    console.log("Local tracks re-enabled based on state.");
+
+                    // --- OPTION B: Force Renegotiation (More Robust) ---
+                    // Tell SocketContext to renegotiate with peers
+                    // You would need to add a 'renegotiate' event handler in SocketContext
+                    // that iterates through peerConnections and potentially sends new offers.
+                    // socket.emit("webrtc-renegotiate-needed");
+                    // console.log("Emitted renegotiation request.");
+                    // --- End Option B ---
+                }
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+        // Add dependencies that control track enabling (isMicOn, isCameraOn)
+    }, [localStream, isMicOn, isCameraOn, socket]); // Include socket if using Option B
+    // --- END NEW ---
     return (
         <div className="flex flex-col p-4" style={{ height: viewHeight }}>
            <h1 className="view-title mb-4">
