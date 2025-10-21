@@ -94,6 +94,7 @@ const peerConnections = useRef<Map<SocketId, RTCPeerConnection>>(new Map())
         [setCurrentUser, setStatus, setUsers],
     )
     const closePeerConnection = useCallback((socketId: SocketId) => {
+        console.log(`[WebRTC] Closing and removing PeerConnection for ${socketId}`)
         peerConnections.current.get(socketId)?.close()
         peerConnections.current.delete(socketId)
         setRemoteStreams(prev => {
@@ -104,16 +105,32 @@ const peerConnections = useRef<Map<SocketId, RTCPeerConnection>>(new Map())
     }, [setRemoteStreams])
 
     const createPeerConnection = useCallback((socketId: SocketId, isOfferor: boolean) => {
+        console.log(`[WebRTC] Creating PeerConnection for ${socketId}. Offeror: ${isOfferor}. localStream: ${!!localStream}, Tracks: ${localStream?.getTracks().length}`); // <-- LOG 2
+       // Prevent duplicate connections
+        if (peerConnections.current.has(socketId)) {
+            console.warn(`[WebRTC] PeerConnection already exists for ${socketId}.`);
+            return peerConnections.current.get(socketId) as RTCPeerConnection;
+        }
+
         const pc = new RTCPeerConnection(STUN_SERVERS)
         peerConnections.current.set(socketId, pc)
 
-        // Add your local video/audio tracks to the connection
-        localStream?.getTracks().forEach(track => {
-            pc.addTrack(track, localStream)
-        })
+        if (localStream) {
+            localStream.getTracks().forEach(track => {
+                console.log(`[WebRTC] Adding ${track.kind} track to PC for ${socketId}`); // <-- LOG 3
+                try {
+                    pc.addTrack(track, localStream)
+                } catch (error) {
+                    console.error(`[WebRTC] Error adding track for ${socketId}:`, error);
+                }
+            })
+        } else {
+            console.warn(`[WebRTC] Cannot add tracks for ${socketId}: localStream is null.`); // <-- LOG 4
+        }
 
         // When the OTHER user sends their video, add it to remoteStreams
         pc.ontrack = event => {
+            console.log(`>>> ONTRACK event received from socketId: ${socketId}`, event.streams[0]); // Make sure this log exists
             setRemoteStreams(prev =>
                 new Map(prev).set(socketId, event.streams[0]),
             )
@@ -122,53 +139,91 @@ const peerConnections = useRef<Map<SocketId, RTCPeerConnection>>(new Map())
         // Handle network negotiation
         pc.onicecandidate = event => {
             if (event.candidate) {
+                console.log(`[WebRTC] ---> Sending ICE CANDIDATE to ${socketId}`); // <-- LOG 6
                 socket.emit(WebRTCSocketEvent.WEBRTC_ICE_CANDIDATE, {
                     to: socketId,
                     candidate: event.candidate,
                 })
             }
         }
-
+        // Handle connection state changes (for debugging)
+        pc.oniceconnectionstatechange = () => {
+             console.log(`[WebRTC] ICE Connection State Change for ${socketId}: ${pc.iceConnectionState}`); // <-- LOG 7
+        };
+        pc.onconnectionstatechange = () => {
+             console.log(`[WebRTC] Connection State Change for ${socketId}: ${pc.connectionState}`); // <-- LOG 8
+        }
         // If you are the "offeror" (the one starting the call), create an offer
         if (isOfferor) {
+            console.log(`[WebRTC] Creating OFFER for ${socketId}`); // <-- LOG 9
             pc.createOffer()
                 .then(offer => pc.setLocalDescription(offer))
                 .then(() => {
+                    console.log(`[WebRTC] ---> Sending OFFER to ${socketId}`); // <-- LOG 10
                     socket.emit(WebRTCSocketEvent.WEBRTC_OFFER, {
                         to: socketId,
                         offer: pc.localDescription,
                     })
                 })
+                .catch(error => console.error(`[WebRTC] Error creating offer for ${socketId}:`, error));
         }
 
         return pc
     }, [localStream, setRemoteStreams, socket])
 
 
-    const handleOffer = useCallback(async ({ from, offer }: { from: SocketId; offer: RTCSessionDescriptionInit }) => {
-        const pc = createPeerConnection(from, false) // Create connection, false = not offeror
-        await pc.setRemoteDescription(new RTCSessionDescription(offer))
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
-        socket.emit(WebRTCSocketEvent.WEBRTC_ANSWER, {
-            to: from,
-            answer: pc.localDescription,
-        })
+   const handleOffer = useCallback(async ({ from, offer }: { from: SocketId; offer: RTCSessionDescriptionInit }) => {
+        console.log(`[WebRTC] <<< Received OFFER from ${from}`); // <-- LOG 11
+        const pc = createPeerConnection(from, false) // false = not offeror
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            console.log(`[WebRTC] Set remote description (offer) from ${from}`); // <-- LOG 12
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            console.log(`[WebRTC] ---> Sending ANSWER to ${from}`); // <-- LOG 13
+            socket.emit(WebRTCSocketEvent.WEBRTC_ANSWER, {
+                to: from,
+                answer: pc.localDescription,
+            })
+        } catch (error) {
+            console.error(`[WebRTC] Error handling offer from ${from}:`, error);
+        }
     }, [createPeerConnection, socket])
 
-    const handleAnswer = useCallback(async ({ from, answer }: { from: SocketId; answer: RTCSessionDescriptionInit }) => {
+   const handleAnswer = useCallback(async ({ from, answer }: { from: SocketId; answer: RTCSessionDescriptionInit }) => {
+        console.log(`[WebRTC] <<< Received ANSWER from ${from}`); // <-- LOG 14
         const pc = peerConnections.current.get(from)
         if (pc) {
-            await pc.setRemoteDescription(new RTCSessionDescription(answer))
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                console.log(`[WebRTC] Set remote description (answer) from ${from}`); // <-- LOG 15
+            } catch (error) {
+                console.error(`[WebRTC] Error handling answer from ${from}:`, error);
+            }
+        } else {
+             console.warn(`[WebRTC] PeerConnection not found for ${from} when handling answer.`);
         }
     }, [])
 
     const handleIceCandidate = useCallback(async ({ from, candidate }: { from: SocketId; candidate: RTCIceCandidateInit }) => {
-        const pc = peerConnections.current.get(from)
+        console.log(`[WebRTC] <<< Received CANDIDATE from ${from}`); // <-- LOG 16
+        const pc = peerConnections.current.get(from);
         if (pc) {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate))
+            try {
+                 // Try adding candidate even if remote description isn't set yet, but log errors
+                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                 // console.log(`[WebRTC] Added ICE candidate from ${from}`); // This can be very noisy
+            } catch (error) {
+                 // Ignore common harmless errors when candidates arrive early
+                  // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+                 if (error.name !== 'InvalidStateError' && !error.message.includes("remote description is not set")) {
+                    console.error(`[WebRTC] Error adding received ICE candidate from ${from}`, error);
+                 }
+            }
+        } else {
+            console.warn(`[WebRTC] PeerConnection not found for ${from} when receiving ICE candidate.`);
         }
-    }, [])
+    }, []);
 
 
     const handleUserLeft = useCallback(
@@ -193,16 +248,43 @@ const peerConnections = useRef<Map<SocketId, RTCPeerConnection>>(new Map())
         [drawingData, socket],
     )
 useEffect(() => {
-        if (!localStream || !currentUser) return
+    console.log(`[Connect Effect] Running. localStream: ${!!localStream}, currentUser: ${!!currentUser}, Users: ${users.length}`);
+    if (!localStream || !currentUser) {
+        console.log("[Connect Effect] Exiting: localStream or currentUser not ready.");
+        return;
+    }
 
-        // Connect to all existing users
-        users.forEach(user => {
-            if (!peerConnections.current.has(user.socketId)) {
-                createPeerConnection(user.socketId, true) // true = I am the offeror
-            }
-        })
+    users.forEach(user => {
+        // Ensure not connecting to self
+          // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+        if (user.socketId === currentUser.socketId) return;
 
-    }, [localStream, users, currentUser, createPeerConnection])
+        // --- NEW: Determine who should offer ---
+        // Only create offer if my ID is "lower" than the other user's ID
+          // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+        const shouldOffer = currentUser.socketId < user.socketId;
+        // --- END NEW ---
+
+        if (!peerConnections.current.has(user.socketId)) {
+            console.log(`[Connect Effect] Needs connection for ${user.username} (${user.socketId}). Should Offer: ${shouldOffer}`);
+            // --- UPDATED: Pass shouldOffer to createPeerConnection ---
+            createPeerConnection(user.socketId, shouldOffer);
+        }
+        // --- If connection exists, potentially renegotiate if needed (advanced) ---
+        // else { console.log(`[Connect Effect] Connection already exists for ${user.username}`) }
+    });
+
+    // Cleanup stale connections (unchanged)
+    peerConnections.current.forEach((pc, socketId) => {
+          // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+        if (!users.some(u => u.socketId === socketId) && socketId !== currentUser.socketId) {
+            console.log(`[Connect Effect] Cleaning up stale connection for ${socketId}`);
+            closePeerConnection(socketId);
+        }
+    });
+
+}, [localStream, users, currentUser, createPeerConnection, closePeerConnection]);
+
 
     const handleDrawingSync = useCallback(
         ({ drawingData }: { drawingData: DrawingData }) => {
@@ -233,6 +315,13 @@ socket.on(WebRTCSocketEvent.WEBRTC_OFFER, handleOffer)
             socket.off(WebRTCSocketEvent.WEBRTC_OFFER)
             socket.off(WebRTCSocketEvent.WEBRTC_ANSWER)
             socket.off(WebRTCSocketEvent.WEBRTC_ICE_CANDIDATE)
+
+            // --- NEW: Cleanup all peer connections on unmount ---
+            console.log("[WebRTC] Cleaning up all peer connections on unmount."); // <-- LOG 21
+            peerConnections.current.forEach((pc, socketId) => {
+                closePeerConnection(socketId);
+            });
+            // --- END NEW ---
         }
     }, [
         handleDrawingSync,
@@ -246,6 +335,7 @@ socket.on(WebRTCSocketEvent.WEBRTC_OFFER, handleOffer)
         handleOffer,
         handleAnswer,
         handleIceCandidate,
+        closePeerConnection,
     ])
 
     return (
