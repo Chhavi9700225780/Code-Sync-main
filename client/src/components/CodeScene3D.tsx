@@ -202,7 +202,7 @@ export default function CodeScene3D() {
             // Sort nodes by z-depth
             const sortedNodes = [...nodes].sort((a, b) => b.z - a.z)
 
-            sortedNodes.forEach((node, i) => {
+            sortedNodes.forEach((node) => {
                 // Update node position with smooth movement
                 const targetAngle = (nodes.indexOf(node) / nodes.length) * Math.PI * 2 + codeRotation * 0.3
                 node.targetX = Math.cos(targetAngle) * radius + mouse.x * 0.5
