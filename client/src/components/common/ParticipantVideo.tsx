@@ -31,6 +31,7 @@ console.log(
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const dataArrayRef = useRef<Uint8Array | null>(null);
+
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
     const intervalIdRef = useRef<NodeJS.Timeout | null>(null); // For setInterval cleanup
     // --- END LOGGING ---

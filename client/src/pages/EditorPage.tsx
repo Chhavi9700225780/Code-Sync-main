@@ -29,7 +29,7 @@ function EditorPage() {
             navigate("/", {
                 state: { roomId },
             })
-        } else if (roomId) {
+        } else if (roomId ) {
             const user: User = { username, roomId }
             setCurrentUser(user)
             socket.emit(SocketEvent.JOIN_REQUEST, user)

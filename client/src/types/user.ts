@@ -6,7 +6,7 @@ enum USER_CONNECTION_STATUS {
 interface User {
     username: string
     roomId: string
-    socketId: string
+    
 }
 
 interface RemoteUser extends User {
