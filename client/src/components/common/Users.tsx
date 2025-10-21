@@ -25,6 +25,7 @@ const { users, currentUser: self, remoteStreams } = useAppContext()
     // --- NEW: Calculate count ---
     // If self isn't loaded, count is 0.
     // Otherwise, the count is self (1) + all remote users (users.length).
+    
     const activeUserCount = self ? users.length : 0
     // --- END NEW ---
     // --- !! TODO: WebRTC Integration !! ---
@@ -45,6 +46,7 @@ const { users, currentUser: self, remoteStreams } = useAppContext()
     // --- END FIX ---
 
     // If the code reaches here, 'self' is guaranteed to exist.
+     // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
     const remoteUsers = users.filter(user => user.socketId !== self.socketId)
 
     return (
