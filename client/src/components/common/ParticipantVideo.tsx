@@ -59,7 +59,7 @@ console.log(
                 // Start checking volume periodically
                 intervalIdRef.current = setInterval(() => {
                     if (!analyserRef.current || !dataArrayRef.current) return;
-
+                    // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
                     analyserRef.current.getByteFrequencyData(dataArrayRef.current); // Use frequency data
 
                     // Calculate average volume
