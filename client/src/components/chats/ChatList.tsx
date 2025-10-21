@@ -37,11 +37,11 @@ function ChatList() {
     }, [isNewMessage, setIsNewMessage, lastScrollHeight])
 
     return (
-        <div
-            className="flex-grow overflow-auto rounded-md bg-darkHover p-2"
-            ref={messagesContainerRef}
-            onScroll={handleScroll}
-        >
+       <div
+    className="flex flex-col flex-grow overflow-auto rounded-md bg-darkHover p-2" // <-- Add "flex flex-col"
+    ref={messagesContainerRef}
+    onScroll={handleScroll}
+>
             {/* Chat messages */}
             {messages.map((message) => {
                 const isMyMessage = message.username === currentUser?.username;
@@ -62,7 +62,7 @@ function ChatList() {
         setReplyingTo(message);
     }}
     className={`absolute top-1/2 -translate-y-1/2 p-1 text-white  ${
-        isMyMessage ? "left-80" : "right-7"
+        isMyMessage ? "left-64" : "-right-6"
     }`}
     title="Reply"
 >
