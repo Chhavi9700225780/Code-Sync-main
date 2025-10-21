@@ -2,12 +2,18 @@ import express, { Response, Request } from "express"
 import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
+import session from 'express-session'; // Ensure import
+import passport from 'passport';     // Ensure import
+import './config/passport';   
 import { SocketEvent, SocketId } from "./types/socket"
 import { USER_CONNECTION_STATUS, User } from "./types/user"
 import { Server } from "socket.io"
 import path from "path"
-
-dotenv.config()
+import gitRoutes from './routes/gitRoutes';
+import mongoose from 'mongoose';
+       // Ensure passport config runs
+import authRoutes from './routes/authRoutes'; // Import the auth routes
+dotenv.config() // Load .env first
 
 const app = express()
 
@@ -17,6 +23,34 @@ app.use(cors())
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 
+// --- Session Configuration (BEFORE PASSPORT) ---
+if (!process.env.SESSION_SECRET) {
+    console.error('FATAL ERROR: SESSION_SECRET environment variable is not defined.');
+    process.exit(1);
+}
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    }
+}));
+// --- End Session Configuration ---
+
+app.use(passport.initialize());
+app.use(passport.session()); // Now Passport can use the session
+// --- End Passport Initialization ---
+
+
+
+
+app.use('/api/git', gitRoutes);
+
+app.use('/api/auth', authRoutes); // Mount auth routes under /api/auth
+
 const server = http.createServer(app)
 const io = new Server(server, {
 	cors: {
@@ -25,6 +59,7 @@ const io = new Server(server, {
 	maxHttpBufferSize: 1e8,
 	pingTimeout: 60000,
 })
+
 
 let userSocketMap: User[] = []
 
@@ -302,7 +337,18 @@ io.on("connection", (socket) => {
     // --- END NEW LISTENERS ---
 })
 
+
+
+
+if (!process.env.SESSION_SECRET) {
+    console.error('FATAL ERROR: SESSION_SECRET environment variable is not defined.');
+    process.exit(1);
+}
+
+
+
 const PORT = process.env.PORT || 3000
+
 
 app.get("/", (req: Request, res: Response) => {
 	// Send the index.html file
@@ -312,3 +358,18 @@ app.get("/", (req: Request, res: Response) => {
 server.listen(PORT, () => {
 	console.log(`Listening on port ${PORT}`)
 })
+
+
+const MONGODB_URI = "mongodb+srv://gitauser:7PHYxxPPBNwG76Lr@cluster0.59tpxfd.mongodb.net/CodeSync?retryWrites=true&w=majority&appName=Cluster0"
+
+if (!MONGODB_URI) {
+    console.error('FATAL ERROR: DATABASE_URL is not defined in environment variables.');
+   process.exit(1); // Exit if DB connection string is missing
+}
+
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('MongoDB connected successfully.'))
+  .catch(err => {
+      console.error('MongoDB connection error:', err);
+      process.exit(1); // Exit if connection fails
+  });

@@ -5,7 +5,7 @@ import { editorFonts } from "@/resources/Fonts"
 import { editorThemes } from "@/resources/Themes"
 import { langNames } from "@uiw/codemirror-extensions-langs"
 import { ChangeEvent, useEffect } from "react"
-
+import GitHubConnectButton from "@/components/GitHubConnectButton"; // Adjust path if needed
 function SettingsView() {
     const {
         theme,
@@ -100,6 +100,12 @@ function SettingsView() {
                     <div className="peer h-6 w-12 rounded-full bg-darkHover outline-none duration-100 after:absolute after:left-1 after:top-1 after:flex after:h-4 after:w-4 after:items-center after:justify-center after:rounded-full after:bg-white after:font-bold after:outline-none after:duration-500 peer-checked:after:translate-x-6 peer-checked:after:border-white peer-focus:outline-none"></div>
                 </label>
             </div>
+            {/* --- NEW: GitHub Connection Section --- */}
+            <h2 className="text-sm font-semibold text-gray-400 mt-4 self-start">Integrations</h2>
+            <div className="w-full mt-1">
+                <GitHubConnectButton />
+            </div>
+            {/* --- END NEW --- */}
             <button
                 className="mt-auto w-full rounded-md border-none bg-darkHover px-4 py-2 text-white outline-none"
                 onClick={resetSettings}

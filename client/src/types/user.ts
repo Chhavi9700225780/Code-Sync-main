@@ -6,6 +6,8 @@ enum USER_CONNECTION_STATUS {
 interface User {
     username: string
     roomId: string
+    githubId?: string; // You might already have this from the model
+  githubAccessToken?: string;
     
 }
 
