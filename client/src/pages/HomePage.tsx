@@ -304,10 +304,13 @@ function HomePage() {
                      {/* Change 1: Moved mt-10 here from the first child.
   You might also want a larger gap, like gap-6, to match your image.
 */}
-<div className="flex flex-row gap-8 mt-20 h-60">
-    {/* Animated Code Snippet */}
+{/* --- RESPONSIVE UPDATE --- */}
+{/* Stacks vertically on mobile (flex-col), and becomes a row on medium screens and up (md:flex-row). */}
+{/* Height is automatic on mobile, and fixed on larger screens. */}
+<div className="flex flex-col md:flex-row gap-8 mt-16 md:mt-20 h-auto md:h-60">
+
+    {/* Stats Box */}
     <motion.div
-       
         className="grid flex-1 grid-cols-3 gap-6 rounded-xl border border-gray-700/50 bg-darkHover/50 p-6 text-center backdrop-blur-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -322,14 +325,16 @@ function HomePage() {
                 key={index}
                 whileHover={{ scale: 1.05, y: -5 }}
                 transition={{ type: "spring", stiffness: 400 }}
-                className="group mt-8 cursor-pointer"
+                // Adjusted top margin for better mobile layout
+                className="group mt-4 md:mt-8 cursor-pointer"
             >
                 <div className="mb-2 flex justify-center">
                     <div className="rounded-lg bg-primary/10 p-2 transition-colors group-hover:bg-primary/20">
                         <stat.icon className="h-5 w-5 text-primary" />
                     </div>
                 </div>
-                <div className="mb-1 bg-gradient-to-r from-primary to-green-300 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
+                {/* Adjusted font size for mobile */}
+                <div className="mb-1 bg-gradient-to-r from-primary to-green-300 bg-clip-text text-3xl md:text-4xl font-bold text-transparent">
                     {stat.value}
                 </div>
                 <div className="text-xs text-gray-400 md:text-sm">
@@ -338,9 +343,11 @@ function HomePage() {
             </motion.div>
         ))}
     </motion.div>
+
+    {/* Code Snippet Box */}
     <motion.div
-       
-        className="relative flex-1 rounded-xl border border-gray-700 bg-gray-900/80 p-6 backdrop-blur-sm"
+        // Added a minimum height on mobile to look good
+        className="relative flex-1 rounded-xl border border-gray-700 bg-gray-900/80 p-6 backdrop-blur-sm min-h-[160px] md:min-h-0"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.5 }}
@@ -374,9 +381,6 @@ function HomePage() {
             ))}
         </div>
     </motion.div>
-
-    {/* Stats Row */}
-    
 </div>
                 </div>
             </div>
