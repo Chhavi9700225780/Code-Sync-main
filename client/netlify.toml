@@ -1,6 +1,6 @@
 [build]
-  command = "CI=false npm run build" # Or "yarn build", "pnpm run build"
-  publish = "dist"          # Vite's default output folder
+  command = " npm run build" 
+  publish = "dist"          
 
 [[redirects]]
   from = "/*"
