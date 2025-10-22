@@ -15,7 +15,7 @@ export default function Navbar() {
 
     const navigate = useNavigate();
     const location = useLocation();
-// @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+
     const { user, setUser, isLoading, setToken } = useAuth();
 
     useEffect(() => {

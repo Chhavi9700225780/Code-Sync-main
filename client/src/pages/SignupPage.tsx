@@ -8,7 +8,7 @@ const SignupPage = () => {
     const [formData, setFormData] = useState({ username: '', email: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-     // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+    
     const { setUser, setToken } = useAuth(); // <-- Get setToken
 
     // REMOVED: backendUrl variable
