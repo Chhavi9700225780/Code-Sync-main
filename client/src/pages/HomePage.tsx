@@ -3,6 +3,7 @@
 // src/pages/HomePage.tsx
 import CodeScene3D from "@/components/CodeScene3D"
 import Navbar from "@/components/Navbar"
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from "react-router-dom"
 import {
     Code2,
@@ -28,6 +29,7 @@ import { useEffect, useState } from "react"
 function HomePage() {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
     const navigate = useNavigate();
+    const { user } = useAuth(); // Get user state
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             setMousePosition({ x: e.clientX, y: e.clientY })
@@ -697,18 +699,23 @@ function HomePage() {
                         <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-300">
                             Join thousands of developers building amazing projects together
                         </p>
-                        <motion.a
-                            href="#form"
-                            className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-black shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40"
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                               navigate('/login')
-                            }}
-                        >
-                            Get Started Free
-                            <ArrowRight className="h-5 w-5" />
-                        </motion.a>
+                       <motion.a
+            // REMOVED: href="#form"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-black shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+                // Navigate based on user login status
+                if (user) {
+                    navigate('/get-started');
+                } else {
+                    navigate('/login');
+                }
+            }}
+        >
+            Get Started Free
+            <ArrowRight className="h-5 w-5" />
+        </motion.a>
                     </div>
                 </motion.div>
             </div>
