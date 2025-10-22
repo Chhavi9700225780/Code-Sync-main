@@ -2,10 +2,7 @@ import express, { Response, Request } from "express"
 import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
-import session from 'express-session'; // Ensure import
-import passport from 'passport';     
-// Ensure import
-import MongoStore from 'connect-mongo'; 
+ 
 import './config/passport';   
 import { SocketEvent, SocketId } from "./types/socket"
 import { USER_CONNECTION_STATUS, User } from "./types/user"
@@ -17,6 +14,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes'; // Import the auth routes
 
 dotenv.config() // Load .env first
+
 const MONGODB_URI = process.env.DATABASE_URL;
 if (!MONGODB_URI) {
     console.error('FATAL ERROR: DATABASE_URL is not defined.');
@@ -26,7 +24,6 @@ if (!MONGODB_URI) {
 
 const app = express()
 app.use(express.json())
-const isProduction = process.env.NODE_ENV === 'production'; // Check NODE_ENV
 
 const allowedOrigins = [
      'http://localhost:5173',
@@ -47,41 +44,6 @@ app.use(cors({
 }));
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
-
-// --- Session Configuration ---
-if (!process.env.SESSION_SECRET) {
-    console.error('FATAL ERROR: SESSION_SECRET is not defined.');
-    process.exit(1);
-}
-app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: MONGODB_URI,
-        collectionName: 'sessions',
-        ttl: 14 * 24 * 60 * 60 // 14 days
-    }),
-    cookie: {
-		 secure: isProduction,
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-         sameSite: isProduction ? 'none' : 'lax',
-        path: '/'
-        // secure: false, // Keep false or manage carefully with 'trust proxy' if needed
-    }
-}));
-// --- End Session Configuration ---
-
- // --- Trust Proxy (Important for secure cookies behind proxy) ---
-    if (isProduction) {
-        app.set('trust proxy', 1); // Adjust if multiple proxies
-        console.log("Production environment detected, trusting proxy.");
-    }
-// --- !!! PASSPORT INITIALIZATION - ADDED MISSING LINES !!! ---
-app.use(passport.initialize()); // <--- WAS MISSING
-app.use(passport.session());    // <--- WAS MISSING
-// --- !!! END PASSPORT INITIALIZATION !!! ---
 
 
 app.use('/api/git', gitRoutes);
@@ -377,10 +339,6 @@ io.on("connection", (socket) => {
 
 
 
-if (!process.env.SESSION_SECRET) {
-    console.error('FATAL ERROR: SESSION_SECRET environment variable is not defined.');
-    process.exit(1);
-}
 
 
 

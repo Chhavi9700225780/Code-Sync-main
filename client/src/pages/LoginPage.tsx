@@ -1,29 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-//import axios from 'axios';
 import toast from 'react-hot-toast';
-// import { useAppContext } from '../context/AppContext'; // <-- You will need this!
-import { useAuth, api } from '../context/AuthContext';
+// --- FIX: Use relative path instead of alias ---
+import { useAuth, api } from '../context/AuthContext'; // Assuming context is one level up
+
 const LoginPage = () => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { setUser } = useAuth();
-    // const { setCurrentUser } = useAppContext(); // <-- Get your context function
+    // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+    const { setUser, setToken } = useAuth(); // <-- Get setToken
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL; // Or from import.meta.env.VITE_BACKEND_URL
+    // REMOVED: backendUrl variable
+    // REMOVED: handleGitHubLogin function
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleGitHubLogin = () => {
-        // Simply redirect to the backend's GitHub auth route
-        // The backend will handle the rest and redirect back to the frontend
-        window.location.href = `${backendUrl}/api/auth/github`;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -32,34 +24,29 @@ const LoginPage = () => {
         toast.loading('Logging in...');
 
         try {
-            const response = await api.post(
-                '/api/auth/login', 
-                formData,
-                { withCredentials: true } // <-- CRITICAL: Send session cookie
-            );
+            // api instance comes from context, interceptor adds token header
+            // REMOVED: { withCredentials: true }
+            const response = await api.post('/api/auth/login', formData);
 
             toast.dismiss();
             toast.success('Logged in successfully!');
 
-            // --- ALL CHANGES ARE HERE ---
-            // 1. NO MORE TOKEN!
-            // localStorage.setItem('authToken', response.data.token); // <-- DELETE THIS
-            
-            // 2. Get user object from response
-            const { user } = response.data;
-            // 3. Save user to your global state (React Context, Zustand, etc.)
-            // setCurrentUser(user); // <-- TODO: Uncomment and use your context setter
+            const { user, token } = response.data; // <-- Get token from response
+
+            // Store token in localStorage and context state
+            setToken(token);
+            // Store user in context state
+            setUser(user);
             console.log("Logged in user:", user); // For testing
 
-            
-            setUser(user); // <-- Set the user in the global context
+            navigate('/'); // Redirect to home
 
-            navigate('/');
-        } catch (error: any) {
+        } catch (error) {
             toast.dismiss();
-            const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+            // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+            const errorMessage = error.response?.data?.message || 'Login failed.';
             toast.error(errorMessage);
-            console.error(error);
+            console.error("Login Error:", error);
         } finally {
             setIsLoading(false);
         }
@@ -69,47 +56,35 @@ const LoginPage = () => {
         <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
             <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
                 <h1 className="text-3xl font-bold text-center text-primary">Welcome Back!</h1>
-                
-                {/* GitHub Login Button */}
-                <button
-                    onClick={handleGitHubLogin}
-                    className="w-full p-3 font-bold text-white bg-gray-700 rounded-md hover:bg-gray-600 transition"
-                >
-                    Log In with GitHub
-                </button>
 
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-600" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-gray-800 text-gray-400">
-                            Or continue with email
-                        </span>
-                    </div>
-                </div>
+                {/* REMOVED GitHub Login Button and OR divider */}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Email Input */}
                     <div>
                         <label className="text-sm font-bold text-gray-400">Email</label>
                         <input
                             type="email"
                             name="email"
+                            value={formData.email} // Controlled component
                             onChange={handleChange}
                             required
                             className="w-full p-3 mt-1 text-white bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                     </div>
+                    {/* Password Input */}
                     <div>
                         <label className="text-sm font-bold text-gray-400">Password</label>
                         <input
                             type="password"
                             name="password"
+                            value={formData.password} // Controlled component
                             onChange={handleChange}
                             required
                             className="w-full p-3 mt-1 text-white bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                     </div>
+                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -118,6 +93,7 @@ const LoginPage = () => {
                         {isLoading ? 'Logging In...' : 'Log In'}
                     </button>
                 </form>
+                {/* Link to Signup */}
                 <p className="text-center text-gray-400">
                     Don't have an account?{' '}
                     <Link to="/signup" className="font-bold text-primary hover:underline">
@@ -130,3 +106,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

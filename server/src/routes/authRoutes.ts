@@ -4,7 +4,7 @@ import passport from 'passport';
 import dotenv from 'dotenv';
 // No longer need User model import here unless used elsewhere
 // import User from '../models/User';
-import { registerUser, loginUser, getAuthStatus } from '../controllers/authController';
+import { registerUser, loginUser } from '../controllers/authController';
 // Remove unused jwt require
 // const jwt = require("jsonwebtoken");
 
