@@ -14,7 +14,7 @@ const SignupPage = () => {
     const navigate = useNavigate();
     const { setUser } = useAuth(); 
 
-    const backendUrl = process.env.VITE_BACKEND_URL; // Or from your env
+    const backendUrl = import.meta.env.VITE_BACKEND_URL; // Or from your env
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

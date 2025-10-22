@@ -14,7 +14,7 @@ const LoginPage = () => {
     const { setUser } = useAuth();
     // const { setCurrentUser } = useAppContext(); // <-- Get your context function
 
-    const backendUrl = process.env.VITE_BACKEND_URL; // Or from import.meta.env.VITE_BACKEND_URL
+    const backendUrl = import.meta.env.VITE_BACKEND_URL; // Or from import.meta.env.VITE_BACKEND_URL
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

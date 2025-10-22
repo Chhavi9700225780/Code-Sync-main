@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
 // Create a reusable axios instance
 // This is what you'll use for ALL your API calls (login, signup, auth status)
 const api = axios.create({
-    baseURL:  process.env.VITE_BACKEND_URL,
+    baseURL: import.meta.env.VITE_BACKEND_URL,
     withCredentials: true, // This is essential for sessions!
 });
 
