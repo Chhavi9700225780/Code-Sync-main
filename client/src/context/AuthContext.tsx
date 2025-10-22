@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'; // Import InternalAxiosRequestConfig
 
 // --- 1. Define the User Type ---
-// Ensure this matches the user object sent by your backend
 export interface AuthUser {
   id: string;
   username: string;
-  email?: string; // Make optional if not always present
+  email?: string;
 }
 
 // --- 2. Define the Context's Value Shape ---
@@ -14,21 +13,25 @@ interface AuthContextType {
   user: AuthUser | null;
   setUser: Dispatch<SetStateAction<AuthUser | null>>;
   isLoading: boolean;
-  api: AxiosInstance; // Expose the pre-configured axios instance
-  token: string | null; // <-- Add state for token
-  setToken: (newToken: string | null) => void; // <-- Add wrapper setter
+  api: AxiosInstance;
+  token: string | null;
+  setToken: (newToken: string | null) => void;
 }
 
 // --- 3. Create the Context ---
-const AuthContext = createContext<AuthContextType| null>(null); // Cast for initial undefined
+
+const AuthContext = createContext<AuthContextType>(undefined as any);
 
 // --- 4. Create Pre-configured Axios Instance ---
-// Use process.env - Vite typically replaces this during build
-// Make sure VITE_BACKEND_URL is defined in your frontend .env file
+// --- FIX: Remove import.meta.env usage to avoid es2015 warning ---
+// Use environment variable directly if available (e.g., through process.env if build tool replaces it)
+// or rely solely on the fallback for now.
+// For Vite, ensure target in tsconfig.json is 'esnext' or similar if using import.meta.env
 export const api = axios.create({
-  baseURL: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
-  // REMOVE: withCredentials: true, // Not needed for JWT Bearer tokens
+  baseURL: process.env.VITE_BACKEND_URL || 'http://localhost:3000', // Adjusted access
 });
+// --- END FIX ---
+
 
 // --- 5. Create the Provider Component ---
 interface AuthProviderProps {
@@ -37,96 +40,118 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setTokenState] = useState<string | null>(() => localStorage.getItem('authToken')); // Initialize from localStorage
-  const [isLoading, setIsLoading] = useState(true); // Start true for initial check
+  // Initialize directly from localStorage + LOGGING
+  const [token, setTokenState] = useState<string | null>(() => {
+      const storedToken = localStorage.getItem('authToken');
+      // --- LOG 1 ---
+      console.log("AuthProvider Init - Token from localStorage:", storedToken ? storedToken.substring(0, 10)+"..." : "None");
+      return storedToken;
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // --- Axios Request Interceptor ---
+  // Wrapper for setToken to also update localStorage + LOGGING
+  const setToken = (newToken: string | null) => {
+      setTokenState(newToken);
+      if (newToken) {
+          localStorage.setItem('authToken', newToken);
+          // --- LOG 2 ---
+          console.log("setToken called - Saving token:", newToken.substring(0, 10)+"...");
+      } else {
+          localStorage.removeItem('authToken');
+           // --- LOG 3 ---
+          console.log("setToken called - Removing token");
+      }
+  };
+
+  // --- Axios Request Interceptor (Setup once) + LOGGING ---
   useEffect(() => {
-    const requestInterceptor = api.interceptors.request.use(
-      (config) => {
-        // Get token from state on each request
-        // Re-read from localStorage directly in interceptor for potential updates
+    // --- LOG 4 ---
+    console.log("Setting up Axios interceptor.");
+    const interceptorId = api.interceptors.request.use(
+      (config: InternalAxiosRequestConfig) => {
+        // ALWAYS read fresh token from localStorage inside interceptor
         const currentToken = localStorage.getItem('authToken');
+        // --- LOG 5 ---
+        console.log("Interceptor running - Token from localStorage:", currentToken ? currentToken.substring(0, 10)+"..." : "None");
         if (currentToken) {
           config.headers.Authorization = `Bearer ${currentToken}`;
+           // --- LOG 6 ---
+          console.log("Interceptor - Added Authorization header.");
+        } else {
+             delete config.headers.Authorization;
+             // --- LOG 7 ---
+             console.log("Interceptor - No token found, ensuring no Authorization header.");
         }
         return config;
       },
       (error) => {
+        // --- LOG 8 ---
+        console.error("Interceptor error:", error);
         return Promise.reject(error);
       }
     );
 
     // Clean up interceptor on unmount
     return () => {
-      api.interceptors.request.eject(requestInterceptor);
+      // --- LOG 9 ---
+      console.log("Ejecting Axios interceptor.");
+      api.interceptors.request.eject(interceptorId);
     };
-  }, []); // Run interceptor setup once
+  }, []); // Empty dependency array - setup ONCE
   // --- End Interceptor ---
 
-  // Wrapper for setToken to also update localStorage
-  const setToken = (newToken: string | null) => {
-      setTokenState(newToken); // Update state
-      if (newToken) {
-          localStorage.setItem('authToken', newToken);
-          console.log("Token saved to localStorage");
-      } else {
-          localStorage.removeItem('authToken');
-          console.log("Token removed from localStorage");
-      }
-  };
 
-
-  // Check user status on initial load based on token
+  // Check user status on initial load based on token + LOGGING
   useEffect(() => {
     const checkUserStatus = async () => {
-        // Use the token currently in state (initialized from localStorage)
-        const currentToken = token; // Use state token for check logic
-        if (currentToken) {
-            console.log("Found token in state, verifying...");
+        // Use token from state (reflects initial localStorage)
+        const initialToken = token;
+        // --- LOG 10 ---
+        console.log("checkUserStatus effect running - Initial token from state:", initialToken ? initialToken.substring(0, 10)+"..." : "None");
+
+        if (initialToken) {
+             // --- LOG 11 ---
+            console.log("checkUserStatus - Verifying initial token via /api/auth/status");
             try {
-                // Verify token by calling the protected /status route
-                // Interceptor automatically adds the Authorization header based on localStorage
+                // Interceptor will add header
                 const response = await api.get('/api/auth/status');
+                // --- LOG 12 ---
+                console.log("checkUserStatus - /status response:", response.data);
                 if (response.data.isAuthenticated && response.data.user) {
-                    console.log("Token verified, setting user:", response.data.user);
-                    setUser(response.data.user); // Set user data if token is valid
+                     // --- LOG 13 ---
+                    console.log("checkUserStatus - Token verified, setting user:", response.data.user);
+                    setUser(response.data.user);
+                    // Optional: Sync state if somehow localStorage changed mid-flight
+                    if (token !== localStorage.getItem('authToken')) {
+                        console.warn("checkUserStatus - Syncing token state with updated localStorage");
+                        setTokenState(localStorage.getItem('authToken'));
+                    }
                 } else {
-                     console.log("Token invalid or expired according to backend.");
-                     setToken(null); // Clear invalid token (state and localStorage)
+                     // --- LOG 14 ---
+                     console.log("checkUserStatus - Backend indicates token invalid/expired.");
+                     setToken(null); // Clear invalid token (state + localStorage)
                      setUser(null);
                 }
-            }
-
-               
-            catch (error ) {
-                // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
-                 console.error('Auth status check failed (likely invalid/expired token):', error.response?.data?.message || error.message);
-                 setToken(null); // Clear token on error (state and localStorage)
+            } catch (error) {
+                 // --- LOG 15 ---
+                   // @ts-expect-error TS2345 - Suppressing ArrayBufferLike error temporarily
+                 console.error('checkUserStatus - API call failed:', error.response?.data?.message || error.message);
+                 setToken(null); // Clear potentially invalid token
                  setUser(null);
             }
         } else {
-             // No token found initially
-             console.log("No token found on initial load.");
+             // --- LOG 16 ---
+             console.log("checkUserStatus - No initial token found.");
              setUser(null);
         }
-        setIsLoading(false); // Finished loading check
+        setIsLoading(false);
     };
 
     checkUserStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on initial mount
+  }, []); // Run only ONCE on initial mount
 
-
-  // The value object passed to consumers
-  const contextValue = {
-    user,
-    setUser,
-    isLoading,
-    api, // Provide the instance
-    token, // Provide the current token from state
-    setToken // Provide the wrapper function
-  };
+  const contextValue = { user, setUser, isLoading, api, token, setToken };
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -143,6 +168,4 @@ export const useAuth = () => {
   }
   return context;
 };
-
-// Note: No longer need to export 'api' separately if it's in the context value
 
