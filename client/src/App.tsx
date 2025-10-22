@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
 import GetStartedPage from "./components/GetStartedPage"
+import AuthCallback from "./components/Authcallback"
 const App = () => {
     return (
         <>
@@ -17,6 +18,7 @@ const App = () => {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/editor/:roomId" element={<EditorPage />} />
                      <Route path="/get-started" element={<GetStartedPage />} />
+                     <Route path="/auth/callback" element={<AuthCallback />} />
                 </Routes>
             </Router>
             <GitHubCorner/>
