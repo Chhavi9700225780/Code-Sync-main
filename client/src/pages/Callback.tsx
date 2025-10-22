@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, api } from '../context/AuthContext'; 
 import toast from 'react-hot-toast';
 
-const AuthCallback = () => {
+function Callback ()  {
     const navigate = useNavigate();
     const location = useLocation(); // To get query parameters like returnTo
     const { setUser } = useAuth();
@@ -57,7 +57,7 @@ const AuthCallback = () => {
             {error && <p className="text-red-500 mt-4">{error}</p>}
         </div>
     );
-};
+}
 
-export default AuthCallback;
+export default Callback;
 
