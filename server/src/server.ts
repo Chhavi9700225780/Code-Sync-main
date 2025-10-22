@@ -46,16 +46,16 @@ if (!process.env.SESSION_SECRET) {
     process.exit(1);
 }
 
-// Remove NODE_ENV check for cookie settings
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        // secure: false, // Set to false, let proxy handle HTTPS security. Works better locally.
+        // secure: false, // Keep false for flexibility with HTTP/HTTPS proxies
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        sameSite: 'lax' // Explicitly 'lax', the default that works without production flag
+        sameSite: 'lax',
+        path: '/' // <-- ADD THIS LINE
     }
 }));
 // --- End Session Configuration ---
