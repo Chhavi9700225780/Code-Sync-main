@@ -39,43 +39,49 @@ router.get('/github',
 // --- GitHub Callback Route ---
 // --- GitHub Callback Route ---
 router.get('/github/callback',
-    passport.authenticate('github', {
-        failureRedirect: (process.env.FRONTEND_URL || 'http://localhost:5173') + '/login',
-    }),
-    // --- Success Handler with Explicit Save ---
+    (req, res, next) => {
+        // --- ADD THIS LOG ---
+        console.log(`>>> HIT /github/callback ROUTE - Query:`, req.query);
+        // --- END ADD ---
+        // Now call passport.authenticate
+        passport.authenticate('github', {
+            failureRedirect: (process.env.FRONTEND_URL || 'http://localhost:5173') + '/login',
+        })(req, res, next); // Call authenticate as middleware
+    },
+    // --- Success Handler ---
     (req, res) => {
-        console.log("GitHub callback successful. User:", req.user); // Session IS established here
+        // --- ADD THIS LOG ---
+        console.log(`>>> PASSPORT AUTHENTICATE SUCCESSFUL - User:`, req.user);
+        // --- END ADD ---
+        console.log("GitHub callback successful. User:", req.user); // Keep existing log
 
+        // ... (rest of your success handler with req.session.save)
         const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const returnRoomId = (req.session as any).returnRoomId;
-        let redirectUrl = `${frontendBaseUrl}/auth/callback`; // Target frontend callback
+        let redirectUrl = `${frontendBaseUrl}/auth/callback`;
 
         if (returnRoomId) {
              redirectUrl += `?returnTo=/editor/${returnRoomId}`;
              console.log(`Will redirect to frontend auth callback, aiming for editor room: ${returnRoomId}`);
         } else {
              console.log(`Will redirect to frontend auth callback, aiming for homepage.`);
-             // Optionally add returnTo for homepage: redirectUrl += `?returnTo=/`;
         }
 
-        // --- !!! EXPLICITLY SAVE SESSION BEFORE REDIRECTING !!! ---
         req.session.save((err) => {
             if (err) {
-                console.error("Error saving session before redirect:", err);
-                // Redirect to login even on save error, maybe add an error query param
+                // --- ADD THIS LOG ---
+                console.error(">>> ERROR saving session before redirect:", err);
+                // --- END ADD ---
                 return res.redirect(`${frontendBaseUrl}/login?error=session_save_failed`);
             }
-            
+
             console.log("Session explicitly saved. Now redirecting to:", redirectUrl);
-            // Clean up session variable *after* constructing URL, *before* redirecting
             if (returnRoomId) delete (req.session as any).returnRoomId;
-            // if ((req.session as any).returnPath) delete (req.session as any).returnPath;
-            
-            res.redirect(redirectUrl); // Redirect AFTER save completes
+            res.redirect(redirectUrl);
         });
-        // --- !!! END EXPLICIT SAVE !!! ---
     }
 );
+
 
 
 // GET /api/auth/logout
