@@ -15,16 +15,21 @@ import gitRoutes from './routes/gitRoutes';
 import mongoose from 'mongoose';
        // Ensure passport config runs
 import authRoutes from './routes/authRoutes'; // Import the auth routes
+
 dotenv.config() // Load .env first
+const MONGODB_URI = process.env.DATABASE_URL;
+if (!MONGODB_URI) {
+    console.error('FATAL ERROR: DATABASE_URL is not defined.');
+    process.exit(1);
+}
+
 
 const app = express()
-
 app.use(express.json())
+
 const allowedOrigins = [
      'http://localhost:5173',
 	 'https://synctogether.netlify.app',
-    
-    
 ];
 
 // 2. Configure the CORS middleware
@@ -42,31 +47,35 @@ app.use(cors({
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 
-const MONGODB_URI = process.env.DATABASE_URL;
-// --- Session Configuration with MongoStore ---
-    if (!process.env.SESSION_SECRET) {
-        console.error('FATAL ERROR: SESSION_SECRET is not defined.');
-        process.exit(1);
+// --- Session Configuration ---
+if (!process.env.SESSION_SECRET) {
+    console.error('FATAL ERROR: SESSION_SECRET is not defined.');
+    process.exit(1);
+}
+app.use(session({
+    secret: process.env.SESSION_SECRET!,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: MONGODB_URI,
+        collectionName: 'sessions',
+        ttl: 14 * 24 * 60 * 60 // 14 days
+    }),
+    cookie: {
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+        sameSite: 'lax',
+        path: '/'
+        // secure: false, // Keep false or manage carefully with 'trust proxy' if needed
     }
+}));
+// --- End Session Configuration ---
 
-    app.use(session({
-        secret: process.env.SESSION_SECRET,
-        resave: false, // Don't save session if unmodified
-        saveUninitialized: false, // Don't create session until something stored
-        store: MongoStore.create({ // <-- Use MongoStore
-            mongoUrl: MONGODB_URI,
-            collectionName: 'sessions', // Optional: Name of the sessions collection
-            ttl: 14 * 24 * 60 * 60 // Optional: Session TTL in seconds (e.g., 14 days)
-        }),
-        cookie: {
-            // secure: false, // Keep false unless *certain* proxy handles TLS termination correctly AND you set trust proxy
-            httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week (match store ttl if desired)
-            sameSite: 'lax', // Keep 'lax' for the frontend callback flow
-            path: '/'
-        }
-    }));
-    // --- End Session Configuration ---
+
+// --- !!! PASSPORT INITIALIZATION - ADDED MISSING LINES !!! ---
+app.use(passport.initialize()); // <--- WAS MISSING
+app.use(passport.session());    // <--- WAS MISSING
+// --- !!! END PASSPORT INITIALIZATION !!! ---
 
 
 app.use('/api/git', gitRoutes);
