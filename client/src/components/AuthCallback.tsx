@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, api } from '../context/AuthContext'; 
 import toast from 'react-hot-toast';
 
-const AuthCallback: React.FC = () => {
+const AuthCallback = () => {
     const navigate = useNavigate();
     const location = useLocation(); // To get query parameters like returnTo
     const { setUser } = useAuth();

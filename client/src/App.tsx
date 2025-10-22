@@ -18,7 +18,7 @@ const App = () => {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/editor/:roomId" element={<EditorPage />} />
                      <Route path="/get-started" element={<GetStartedPage />} />
-                     <Route path="/auth/callback" element={<AuthCallback />} />
+                     <Route path="/auth/callback" element={<AuthCallback/>} />
                 </Routes>
             </Router>
             <GitHubCorner/>
