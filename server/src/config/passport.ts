@@ -98,11 +98,20 @@ passport.serializeUser((user: any, done) => {
     done(null, user.id); 
 });
 
+// src/config/passport.ts
 passport.deserializeUser(async (id: string, done) => {
+    console.log(`[deserializeUser] Attempting to find user with ID: ${id}`); // <-- ADD
     try {
         const user = await User.findById(id);
-        done(null, user); 
+        if (!user) {
+            console.error(`[deserializeUser] User NOT FOUND for ID: ${id}`); // <-- ADD
+             done(null, false); // Important: Pass false if not found
+             return;
+        }
+        console.log(`[deserializeUser] Successfully found user:`, user.username); // <-- ADD
+        done(null, user);
     } catch (err) {
+         console.error(`[deserializeUser] Error finding user by ID: ${id}`, err); // <-- ADD
         done(err, null);
     }
 });

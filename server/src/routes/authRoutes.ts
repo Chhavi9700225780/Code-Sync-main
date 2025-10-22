@@ -90,18 +90,21 @@ router.get('/logout', (req, res, next) => {
 });
 
 // GET /api/auth/status
+// src/routes/authRoutes.ts
 router.get('/status', (req, res) => {
-    if (req.isAuthenticated()) {
-        // Send back a sanitized user object
-        const userToSend = {
-             id: (req.user as any).appUserId, // Assuming appUserId is the ID you want on frontend
-             username: (req.user as any).username,
-             email: (req.user as any).email,
-             // Add any other SAFE fields you need on the frontend
-        };
+    console.log('--- Received /api/auth/status request ---'); // <-- ADD
+    console.log('Session ID:', req.sessionID); // <-- ADD
+    // console.log('Full Session Object:', req.session); // Optional: Can be verbose
+    console.log('Is Authenticated?', req.isAuthenticated()); // <-- ADD
+    console.log('req.user object:', req.user); // <-- ADD (Check if populated)
+
+    if (req.isAuthenticated() && req.user) { // Added check for req.user existence
+         const userToSend = { /* ... your sanitized user object ... */ };
+         console.log('--- Responding: Authenticated ---'); // <-- ADD
         res.json({ isAuthenticated: true, user: userToSend });
     } else {
-        res.json({ isAuthenticated: false, user: null }); // Explicitly send user: null
+         console.log('--- Responding: NOT Authenticated ---'); // <-- ADD
+        res.json({ isAuthenticated: false, user: null });
     }
 });
 
