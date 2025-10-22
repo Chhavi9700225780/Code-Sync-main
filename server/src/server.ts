@@ -18,8 +18,24 @@ dotenv.config() // Load .env first
 const app = express()
 
 app.use(express.json())
+const allowedOrigins = [
+     'http://localhost:5173',
+    
+    
+];
 
-app.use(cors())
+// 2. Configure the CORS middleware
+app.use(cors({
+    origin: function(origin, callback){
+        // Check if the incoming request's origin is in our allowed list
+        if (allowedOrigins.indexOf(origin as any) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'));
+        }
+    },
+    credentials: true
+}));
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 

@@ -1,19 +1,26 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// Interface for the document structure, including new fields
 export interface IUser extends Document {
-    // Your existing user fields if you have them (e.g., from your app's login)
-    appUserId: string; // An ID unique to your application's users
-    username: string; // Your app's username
-    githubId?: string; // GitHub's unique user ID (optional but recommended)
-    githubAccessToken?: string; // Store the encrypted token here
-    // Add other fields as needed
+    appUserId: string;
+    username: string;
+    email: string; // New field
+    password?: string; // New field, optional because we won't send it back to the client
+    githubId?: string;
+    githubAccessToken?: string;
 }
 
 const UserSchema: Schema = new Schema({
     appUserId: { type: String, required: true, unique: true },
     username: { type: String, required: true },
-    githubId: { type: String, unique: true, sparse: true }, // Sparse allows null/unique
-    githubAccessToken: { type: String }, // Consider encrypting this field
+    // Make email required, unique, and lowercase
+    email: { type: String, required: true, unique: true, lowercase: true },
+    // Password will be stored as a hash
+    password: { type: String, required: true, select: false }, // 'select: false' prevents password from being sent in queries by default
+    githubId: { type: String, unique: true, sparse: true },
+    githubAccessToken: { type: String },
 }, { timestamps: true });
-// Remove the explicit <IUser> generic
+
+
+
 export default mongoose.model('User', UserSchema);

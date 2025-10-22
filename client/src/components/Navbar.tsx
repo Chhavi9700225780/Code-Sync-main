@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Sparkles, ChevronRight } from "lucide-react"
+import { Menu, X, Sparkles, ChevronRight, LogOut, User as UserIcon } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
+import { useAuth, api } from "../context/AuthContext" // <-- Import auth context
+import toast from "react-hot-toast"
 
-import logo from "@/assets/logo.svg"
+// Assuming you have a logo file at this path
+// If not, you might need to adjust or remove this import
+// import logo from "@/assets/logo.svg" 
+
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [activeSection, setActiveSection] = useState("")
+    
     const navigate = useNavigate()
     const location = useLocation()
+    
+    // Get auth state from context
+    const { user, setUser, isLoading } = useAuth()
 
     useEffect(() => {
         const handleScroll = () => {
@@ -81,9 +90,83 @@ export default function Navbar() {
         setIsMobileMenuOpen(false)
     }
 
-    const handleGetStarted = () => {
-        navigate("/get-started")
+    // --- Auth Navigation ---
+    const handleLogin = () => {
+        navigate("/login")
         setIsMobileMenuOpen(false)
+    }
+    const handleSignup = () => {
+        navigate("/signup")
+        setIsMobileMenuOpen(false)
+    }
+    
+    const handleLogout = async () => {
+        setIsMobileMenuOpen(false)
+        const toastId = toast.loading("Logging out...")
+        try {
+            await api.get("/api/auth/logout") // Use the api instance
+            setUser(null) // Clear user from global state
+            toast.success("Logged out successfully", { id: toastId })
+            navigate("/") // Redirect to home
+        } catch (error) {
+            console.error("Logout failed:", error)
+            toast.error("Logout failed. Please try again.", { id: toastId })
+        }
+    }
+
+    // --- Render Auth Buttons ---
+    const renderAuthButtons = (isMobile: boolean = false) => {
+        if (isLoading) {
+            return (
+                <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center gap-2'}`}>
+                    <div className="h-8 w-24 animate-pulse rounded-full bg-gray-700"></div>
+                </div>
+            )
+        }
+
+        if (user) {
+            // User is logged in
+            return (
+                <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center gap-4'}`}>
+                    <span className="flex items-center gap-2 text-gray-300">
+                        <UserIcon className="h-5 w-5 text-primary" />
+                        {user.username}
+                    </span>
+                    <motion.button
+                        onClick={handleLogout}
+                        className={`group relative flex items-center justify-center gap-2 overflow-hidden rounded-full ${isMobile ? 'w-full py-4 text-lg' : 'px-6 py-2.5 text-sm'} bg-gray-700 font-semibold text-white transition-all hover:bg-gray-600`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <LogOut className="h-4 w-4" />
+                        Log Out
+                    </motion.button>
+                </div>
+            )
+        }
+
+        // User is logged out
+        return (
+            <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center gap-2'}`}>
+                <motion.button
+                    onClick={handleLogin}
+                    className={`rounded-full px-6 py-2.5 font-semibold text-gray-300 transition-colors hover:text-white ${isMobile ? 'w-full py-4 text-lg' : 'text-sm'}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    Log In
+                </motion.button>
+                <motion.button
+                    onClick={handleSignup}
+                    className={`group relative flex items-center justify-center gap-2 overflow-hidden rounded-full bg-primary font-semibold text-black transition-all hover:shadow-lg hover:shadow-primary/40 ${isMobile ? 'w-full py-4 text-lg' : 'px-6 py-2.5 text-sm'}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <Sparkles className="h-4 w-4" />
+                    Sign Up
+                </motion.button>
+            </div>
+        )
     }
 
     return (
@@ -107,12 +190,13 @@ export default function Navbar() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
-                           <img
+                            {/* Using text logo as placeholder since asset path might be wrong */}
+                            {/* <img
                                 src={logo}
                                 alt="Code Sync"
                                 className="transition-all duration-300 h-16" 
-                            />
-                            
+                            /> */}
+                            <span className="text-2xl font-bold text-white">CodeSync</span>
                         </motion.button>
 
                         {/* Desktop Navigation */}
@@ -132,6 +216,7 @@ export default function Navbar() {
                                     <motion.div
                                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-green-300"
                                         initial={{ scaleX: 0 }}
+                                        animate={{ scaleX: activeSection === link.href.substring(1) ? 1 : 0 }}
                                         whileHover={{ scaleX: 1 }}
                                         transition={{ duration: 0.3 }}
                                     />
@@ -139,36 +224,10 @@ export default function Navbar() {
                             ))}
                         </div>
 
-                        {/* Desktop CTA Button */}
-                        <motion.button
-                            onClick={handleGetStarted}
-                            className="group relative hidden items-center gap-2 overflow-hidden rounded-full bg-primary px-6 py-2.5 font-semibold text-black transition-all hover:shadow-lg hover:shadow-primary/40 md:flex"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-green-400 to-primary"
-                                initial={{ x: "-100%" }}
-                                whileHover={{ x: "100%" }}
-                                transition={{ duration: 0.6 }}
-                            />
-                            <span className="relative z-10 flex items-center gap-2">
-                                Get Started
-                                <motion.div
-                                    animate={{ x: [0, 3, 0] }}
-                                    transition={{
-                                        duration: 1.5,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }}
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </motion.div>
-                            </span>
-                        </motion.button>
+                        {/* Desktop Auth Buttons */}
+                        <div className="hidden md:flex">
+                            {renderAuthButtons(false)}
+                        </div>
 
                         {/* Mobile Menu Button */}
                         <motion.button
@@ -238,12 +297,12 @@ export default function Navbar() {
                             {/* Mobile Menu Header */}
                             <div className="flex items-center justify-between border-b border-gray-700 p-6">
                                 <div className="flex items-center gap-3">
-                                   <img
-                                src={logo}
-                                alt="Code Sync"
-                                className="transition-all duration-300 h-16" 
-                            />
-                                    
+                                    {/* <img
+                                    src={logo}
+                                    alt="Code Sync"
+                                    className="transition-all duration-300 h-16" 
+                                /> */}
+                                <span className="text-xl font-bold text-white">CodeSync</span>
                                 </div>
                                 <motion.button
                                     onClick={() => setIsMobileMenuOpen(false)}
@@ -273,18 +332,10 @@ export default function Navbar() {
                                     </motion.button>
                                 ))}
 
-                                {/* Mobile CTA */}
-                                <motion.button
-                                    onClick={handleGetStarted}
-                                    className="mt-6 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-black shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    <Sparkles className="h-5 w-5" />
-                                    Get Started Free
-                                </motion.button>
+                                {/* Mobile Auth Buttons */}
+                                <div className="mt-6 border-t border-gray-700 pt-6">
+                                    {renderAuthButtons(true)}
+                                 </div>
 
                                 {/* Decorative Element */}
                                 <motion.div
@@ -309,3 +360,4 @@ export default function Navbar() {
         </>
     )
 }
+
