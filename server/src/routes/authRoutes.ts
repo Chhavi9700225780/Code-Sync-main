@@ -37,41 +37,46 @@ router.get('/github',
 );
 
 // --- GitHub Callback Route ---
-// GET /api/auth/github/callback
+// --- GitHub Callback Route ---
 router.get('/github/callback',
     passport.authenticate('github', {
-        // Redirect to frontend login on failure
         failureRedirect: (process.env.FRONTEND_URL || 'http://localhost:5173') + '/login',
-        // failureMessage: true // Optional
     }),
-    // --- THIS IS THE SUCCESS HANDLER ---
+    // --- Success Handler with Explicit Save ---
     (req, res) => {
-        // Successful authentication! Passport adds user to req.user and session is created.
-        console.log("GitHub callback successful. User:", req.user);
+        console.log("GitHub callback successful. User:", req.user); // Session IS established here
 
         const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-        // --- !!! CHANGE IS HERE !!! ---
-        // Redirect to a specific frontend callback route, NOT the homepage directly.
-        // We'll append the original intended roomId if it exists, so the frontend can use it later.
         const returnRoomId = (req.session as any).returnRoomId;
-        let redirectUrl = `${frontendBaseUrl}/auth/callback`; // Redirect to frontend callback
+        let redirectUrl = `${frontendBaseUrl}/auth/callback`; // Target frontend callback
 
         if (returnRoomId) {
-             // Append roomId as a query param for the frontend callback page
              redirectUrl += `?returnTo=/editor/${returnRoomId}`;
-             console.log(`Redirecting to frontend auth callback, aiming for editor room: ${returnRoomId}`);
-             delete (req.session as any).returnRoomId; // Clean up session
+             console.log(`Will redirect to frontend auth callback, aiming for editor room: ${returnRoomId}`);
         } else {
-             console.log(`Redirecting to frontend auth callback, aiming for homepage.`);
-             // Optionally use returnPath if needed: redirectUrl += `?returnTo=${(req.session as any).returnPath || '/'}`;
-             // delete (req.session as any).returnPath;
+             console.log(`Will redirect to frontend auth callback, aiming for homepage.`);
+             // Optionally add returnTo for homepage: redirectUrl += `?returnTo=/`;
         }
-        // --- !!! END CHANGE !!! ---
 
-        res.redirect(redirectUrl);
+        // --- !!! EXPLICITLY SAVE SESSION BEFORE REDIRECTING !!! ---
+        req.session.save((err) => {
+            if (err) {
+                console.error("Error saving session before redirect:", err);
+                // Redirect to login even on save error, maybe add an error query param
+                return res.redirect(`${frontendBaseUrl}/login?error=session_save_failed`);
+            }
+            
+            console.log("Session explicitly saved. Now redirecting to:", redirectUrl);
+            // Clean up session variable *after* constructing URL, *before* redirecting
+            if (returnRoomId) delete (req.session as any).returnRoomId;
+            // if ((req.session as any).returnPath) delete (req.session as any).returnPath;
+            
+            res.redirect(redirectUrl); // Redirect AFTER save completes
+        });
+        // --- !!! END EXPLICIT SAVE !!! ---
     }
 );
+
 
 // GET /api/auth/logout
 router.get('/logout', (req, res, next) => {
