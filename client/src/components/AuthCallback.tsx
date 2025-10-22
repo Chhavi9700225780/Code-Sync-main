@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 // Attempting a path relative to the src directory
-import { useAuth, api } from 'src/context/AuthContext'; 
+import { useAuth, api } from '../context/AuthContext'; 
 import toast from 'react-hot-toast';
 
 const AuthCallback: React.FC = () => {
