@@ -3,7 +3,9 @@ import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
 import session from 'express-session'; // Ensure import
-import passport from 'passport';     // Ensure import
+import passport from 'passport';     
+// Ensure import
+import MongoStore from 'connect-mongo'; 
 import './config/passport';   
 import { SocketEvent, SocketId } from "./types/socket"
 import { USER_CONNECTION_STATUS, User } from "./types/user"
@@ -40,31 +42,31 @@ app.use(cors({
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 
-// --- Session Configuration ---
-if (!process.env.SESSION_SECRET) {
-    console.error('FATAL ERROR: SESSION_SECRET environment variable is not defined.');
-    process.exit(1);
-}
-
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        // secure: false, // Keep false for flexibility with HTTP/HTTPS proxies
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        sameSite: 'lax',
-        path: '/' // <-- ADD THIS LINE
+const MONGODB_URI = process.env.DATABASE_URL;
+// --- Session Configuration with MongoStore ---
+    if (!process.env.SESSION_SECRET) {
+        console.error('FATAL ERROR: SESSION_SECRET is not defined.');
+        process.exit(1);
     }
-}));
-// --- End Session Configuration ---
 
-app.use(passport.initialize());
-app.use(passport.session()); // Now Passport can use the session
-// --- End Passport Initialization ---
-
-
+    app.use(session({
+        secret: process.env.SESSION_SECRET,
+        resave: false, // Don't save session if unmodified
+        saveUninitialized: false, // Don't create session until something stored
+        store: MongoStore.create({ // <-- Use MongoStore
+            mongoUrl: MONGODB_URI,
+            collectionName: 'sessions', // Optional: Name of the sessions collection
+            ttl: 14 * 24 * 60 * 60 // Optional: Session TTL in seconds (e.g., 14 days)
+        }),
+        cookie: {
+            // secure: false, // Keep false unless *certain* proxy handles TLS termination correctly AND you set trust proxy
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week (match store ttl if desired)
+            sameSite: 'lax', // Keep 'lax' for the frontend callback flow
+            path: '/'
+        }
+    }));
+    // --- End Session Configuration ---
 
 
 app.use('/api/git', gitRoutes);
@@ -380,7 +382,6 @@ server.listen(PORT, () => {
 })
 
 
-const MONGODB_URI = process.env.DATABASE_URL;
 if (!MONGODB_URI) {
     console.error('FATAL ERROR: DATABASE_URL is not defined in environment variables.');
    process.exit(1); // Exit if DB connection string is missing
