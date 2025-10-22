@@ -39,20 +39,25 @@ app.use(cors({
 }));
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
-
 // --- Session Configuration (BEFORE PASSPORT) ---
 if (!process.env.SESSION_SECRET) {
     console.error('FATAL ERROR: SESSION_SECRET environment variable is not defined.');
     process.exit(1);
 }
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+        secure: isProduction, // Set to true if using HTTPS (like on Render/Netlify)
+        httpOnly: true,       // Keeps cookie inaccessible to client-side scripts
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+        // --- ADD THIS ---
+        sameSite: isProduction ? 'none' : 'lax' // 'none' for cross-site requests (requires secure=true), 'lax' for same-site or top-level navigation
+        // --- END ADD ---
     }
 }));
 // --- End Session Configuration ---
