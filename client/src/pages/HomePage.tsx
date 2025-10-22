@@ -3,6 +3,7 @@
 // src/pages/HomePage.tsx
 import CodeScene3D from "@/components/CodeScene3D"
 import Navbar from "@/components/Navbar"
+import { useNavigate } from "react-router-dom"
 import {
     Code2,
     Users,
@@ -26,7 +27,7 @@ import { useEffect, useState } from "react"
 
 function HomePage() {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-
+    const navigate = useNavigate();
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             setMousePosition({ x: e.clientX, y: e.clientY })
@@ -701,9 +702,8 @@ function HomePage() {
                             className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-black shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40"
                             whileHover={{ scale: 1.05, y: -2 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={(e) => {
-                                e.preventDefault()
-                                window.scrollTo({ top: 0, behavior: "smooth" })
+                            onClick={() => {
+                               navigate('/get-started')
                             }}
                         >
                             Get Started Free
