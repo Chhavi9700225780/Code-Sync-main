@@ -115,23 +115,17 @@ export default function Navbar() {
             return (
                 // Adjusted gap for three items
                 <div className={`flex ${isMobile ? 'flex-col gap-4 items-stretch' : 'items-center gap-3'}`}>
+                   
+                   
+                   
+                   
                     {/* Username */}
                     <span className={`flex items-center gap-2 text-gray-300 ${isMobile ? 'justify-center py-2 text-lg' : 'text-sm'}`}>
                         <UserIcon className="h-5 w-5 text-primary" />
                         <span className="truncate max-w-[80px] md:max-w-[120px]">{user.username}</span>
                     </span>
 
-                    {/* Get Started Button (Logged In) */}
-                    <motion.button
-                        onClick={handleGetStarted}
-                        // Use similar styling as original signup, adjust padding/size
-                        className={`group relative flex items-center justify-center gap-2 overflow-hidden rounded-full bg-primary font-semibold text-black transition-all hover:shadow-lg hover:shadow-primary/40 ${isMobile ? 'w-full py-4 text-lg' : 'px-6 py-2.5 text-sm'}`}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        Get Started
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </motion.button>
+                   
 
                     {/* Logout Button */}
                     <motion.button
@@ -145,6 +139,19 @@ export default function Navbar() {
                         <LogOut className="h-4 w-4" />
                         {/* Optionally hide text on smaller screens if too crowded */}
                         <span className={isMobile ? '' : 'hidden sm:inline'}>Log Out</span>
+                    </motion.button>
+
+
+                     {/* Get Started Button (Logged In) */}
+                    <motion.button
+                        onClick={handleGetStarted}
+                        // Use similar styling as original signup, adjust padding/size
+                        className={`group relative flex items-center justify-center gap-2 overflow-hidden rounded-full bg-primary font-semibold text-black transition-all hover:shadow-lg hover:shadow-primary/40 ${isMobile ? 'w-full py-4 text-lg' : 'px-6 py-2.5 text-sm'}`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        Get Started
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </motion.button>
                 </div>
             );

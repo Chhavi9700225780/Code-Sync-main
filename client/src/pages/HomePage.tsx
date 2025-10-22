@@ -703,7 +703,7 @@ function HomePage() {
                             whileHover={{ scale: 1.05, y: -2 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => {
-                               navigate('/get-started')
+                               navigate('/login')
                             }}
                         >
                             Get Started Free
