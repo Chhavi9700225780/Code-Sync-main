@@ -33,7 +33,13 @@ pipeline {
 
         stage('Run Tests (Placeholder)') {
             steps {
-                echo 'Skipping tests for now...'
+                
+                // --- FIX: Install missing library ---
+                echo 'Updating package list and installing libatomic1...'
+                sh 'apt-get update && apt-get install -y libatomic1'
+
+                 echo 'Running npm install (if tests were active)...'
+                // --- END FIX ---
                 // Add test commands here later if you have them
                 // Example for backend:
                  dir('server') {
