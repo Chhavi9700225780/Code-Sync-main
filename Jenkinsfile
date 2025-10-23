@@ -100,22 +100,28 @@ pipeline {
 
         stage('Push Images to ECR') {
              steps {
-                 echo "Pushing images to AWS ECR (${ECR_REGISTRY})..."
+                 echo "Logging into AWS ECR (${ECR_REGISTRY})..."
                  script {
-                     // Use docker.withRegistry for handling authentication
-                     // It uses the AWS credentials bound in the environment block
-                     docker.withRegistry("https://${ECR_REGISTRY}", 'ecr:us-east-1:aws-credentials-for-ecr') {
+                     // Use withAWS to make credentials available as environment variables
+                     // (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, potentially AWS_SESSION_TOKEN)
+                     withAWS(credentials: 'aws-credentials-for-ecr', region: env.AWS_REGION) {
+                         // Use AWS CLI v2 login method (recommended)
+                         sh "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${env.ECR_REGISTRY}"
+                         echo "ECR Login successful."
+
                          echo "Pushing Backend Image..."
+                         // Use sh directly or docker.image() - docker.image() might be cleaner
                          docker.image("${ECR_REGISTRY}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}").push()
+                         // sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}"
 
                          echo "Pushing Frontend Image..."
                          docker.image("${ECR_REGISTRY}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}").push()
-                     }
+                         // sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}"
+                     } // End withAWS
                      echo "Images pushed successfully."
-                 }
-             }
+                 } // End script
+             } // End steps
         }
-
         // --- Add CD Stage Here Later ---
         // stage('Deploy to EKS') { ... }
 
