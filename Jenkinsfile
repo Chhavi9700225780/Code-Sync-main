@@ -34,15 +34,16 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 echo 'Updating package list and installing prerequisites...'
-                // Install libatomic1 for Node and docker.io for Docker CLI
+                // Install libatomic1, docker.io, AND awscli
                 sh '''
                     apt-get update && \
-                    apt-get install -y libatomic1 docker.io && \
+                    apt-get install -y libatomic1 docker.io awscli && \
                     apt-get clean && \
                     rm -rf /var/lib/apt/lists/*
                 '''
-                // Optional: Verify docker is installed
+                // Verify tools are installed
                 sh 'docker --version'
+                sh 'aws --version' // <-- Verify aws cli install
             }
         }
         // --- END NEW STAGE ---
@@ -97,28 +98,22 @@ pipeline {
             }
         }
 
-        stage('Push Images to ECR (Placeholder)') {
-            // This stage requires AWS credentials configured in Jenkins
-            // and the ECR repositories to exist.
-            steps {
-                echo "Logging into AWS ECR..."
-                script {
-                    // Use the AWS credentials stored in Jenkins
-                    // The withAWS block handles temporary credentials/login
-                    // Requires the 'Pipeline: AWS Steps' plugin in Jenkins
-                    withAWS(credentials: 'aws-credentials-for-ecr', region: env.AWS_REGION) {
-                        // Get ECR login command and execute it
-                        def login = sh(script: "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${env.ECR_REGISTRY}", returnStdout: true).trim()
-                        echo "ECR Login command executed." // Log success, avoid logging the password itself
-
-                        echo "Pushing Backend Image..."
+        stage('Push Images to ECR') {
+             steps {
+                 echo "Pushing images to AWS ECR (${ECR_REGISTRY})..."
+                 script {
+                     // Use docker.withRegistry for handling authentication
+                     // It uses the AWS credentials bound in the environment block
+                     docker.withRegistry("https://${ECR_REGISTRY}", 'ecr:us-east-1:aws-credentials-for-ecr') {
+                         echo "Pushing Backend Image..."
                          docker.image("${ECR_REGISTRY}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}").push()
 
-                        echo "Pushing Frontend Image..."
+                         echo "Pushing Frontend Image..."
                          docker.image("${ECR_REGISTRY}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}").push()
-                    }
-                }
-            }
+                     }
+                     echo "Images pushed successfully."
+                 }
+             }
         }
 
         // --- Add CD Stage Here Later ---
