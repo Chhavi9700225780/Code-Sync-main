@@ -1,31 +1,49 @@
-# Stage 1: Build the project
+# Dockerfile for React Frontend (Vite + TypeScript)
+
+# --- Stage 1: Build ---
+# Use a Node version suitable for your React build process
 FROM node:18-alpine AS builder
 
-WORKDIR /build
-
-# Copy package files and install dependencies
-COPY package*.json .
-
-RUN npm ci
-
-# Copy the rest of the source code and build
-COPY . .
-
-RUN npm run build
-RUN npm prune --omit=dev
-
-# Stage 2: Serve the `dist` folder
-FROM node:18-alpine AS runner
-
+# Set working directory
 WORKDIR /app
 
-# Copy the built frontend from the builder stage
-COPY --from=builder /build/dist dist/
-COPY --from=builder /build/package*.json .
-COPY --from=builder /build/node_modules ./node_modules
+# Copy package files
+COPY package.json package-lock.json ./
 
-# Expose the port
-EXPOSE 5173
+# Install dependencies
+RUN npm ci
 
-# Start the server
-CMD ["npx", "serve", "-s", "dist", "-l", "5173"]
+# Copy the rest of the application code
+COPY . .
+
+# --- Build-time Environment Variable ---
+# Set ARG for the backend URL, default to localhost for safety
+ARG VITE_BACKEND_URL=http://localhost:3000
+
+# Make the ARG available as an environment variable *during the build*
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
+
+# Build the React application
+# Vite uses the VITE_ prefixed env vars during build
+RUN npm run build
+# Expected output is in ./dist
+
+# --- Stage 2: Production Server ---
+# Use a lightweight Nginx server
+FROM nginx:stable-alpine
+
+# Remove default Nginx welcome page
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy built static files from the builder stage to Nginx html directory
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy custom Nginx configuration (Optional but recommended for SPAs)
+# Create a file named nginx.conf next to this Dockerfile
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80 (standard HTTP port Nginx listens on)
+EXPOSE 80
+
+# Default command to start Nginx in the foreground
+CMD ["nginx", "-g", "daemon off;"]

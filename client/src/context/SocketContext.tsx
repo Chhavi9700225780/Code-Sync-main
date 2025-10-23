@@ -30,6 +30,8 @@ export const useSocket = (): SocketContextType => {
 }
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"
+//const SOCKET_URL = "http://localhost:3000"; // <-- Connect via host mapping
+
   const WebRTCSocketEvent = {
     WEBRTC_OFFER: "webrtc-offer",
     WEBRTC_ANSWER: "webrtc-answer",
@@ -53,9 +55,17 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         setRemoteStreams,
         currentUser,
     } = useAppContext()
-    const socket: Socket = useMemo(
+    /*const socket: Socket = useMemo(
         () =>
             io(BACKEND_URL, {
+                reconnectionAttempts: 2,
+            }),
+        [],
+    )*/
+    
+    const socket: Socket = useMemo(
+        () =>
+            io(BACKEND_URL  , {
                 reconnectionAttempts: 2,
             }),
         [],

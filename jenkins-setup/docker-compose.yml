@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17 # Use the recommended LTS Java 17 image
+    container_name: jenkins-lts
+    privileged: true # Often needed if Jenkins needs to interact with Docker daemon
+    user: root # Run as root to avoid permission issues when mounting Docker socket (use with caution)
+    ports:
+      - "8080:8080" # Jenkins Web UI
+      - "50000:50000" # Port for Jenkins agents (may not be needed initially)
+    volumes:
+      - jenkins_home:/var/jenkins_home # Persist Jenkins data
+      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket to allow Jenkins to build images
+      # Optional: Mount your project directory if needed, though Jenkins usually checks out from Git
+      # - /path/to/your/project:/workspace/project
+
+volumes:
+  jenkins_home: {} # Define the named volume for persistence
+
+    
+    
