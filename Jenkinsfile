@@ -30,14 +30,27 @@ pipeline {
                 checkout scm
             }
         }
+         // --- NEW STAGE: Prepare Build Environment ---
+        stage('Prepare Environment') {
+            steps {
+                echo 'Updating package list and installing prerequisites...'
+                // Install libatomic1 for Node and docker.io for Docker CLI
+                sh '''
+                    apt-get update && \
+                    apt-get install -y libatomic1 docker.io && \
+                    apt-get clean && \
+                    rm -rf /var/lib/apt/lists/*
+                '''
+                // Optional: Verify docker is installed
+                sh 'docker --version'
+            }
+        }
+        // --- END NEW STAGE ---
 
         stage('Run Tests (Placeholder)') {
             steps {
                 
-                // --- FIX: Install missing library ---
-                echo 'Updating package list and installing libatomic1...'
-                sh 'apt-get update && apt-get install -y libatomic1'
-
+                
                  echo 'Running npm install (if tests were active)...'
                 // --- END FIX ---
                 // Add test commands here later if you have them
