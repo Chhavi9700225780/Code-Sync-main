@@ -1,6 +1,11 @@
 pipeline {
     agent any // Run on any available Jenkins agent/node
-
+     
+      tools {
+            // Use the NodeJS installation configured in Manage Jenkins -> Tools
+            // The name 'NodeJS-18' MUST match the name you gave it in the Jenkins UI
+            nodejs 'NodeJS-25'
+        }
     // Environment variables needed for the pipeline
     environment {
         // Use credentials stored securely in Jenkins for AWS access
