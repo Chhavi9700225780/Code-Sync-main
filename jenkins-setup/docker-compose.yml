@@ -13,7 +13,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket to allow Jenkins to build images
       # Optional: Mount your project directory if needed, though Jenkins usually checks out from Git
       # - /path/to/your/project:/workspace/project
-
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 volumes:
   jenkins_home: {} # Define the named volume for persistence
 
