@@ -7,14 +7,14 @@ terraform {
     }
   }
 
-  cloud { 
-    
-    organization = "CodeSyncProject" 
+  cloud {
 
-    workspaces { 
-      name = "CodeSyncProject" 
-    } 
-  } 
+    organization = "CodeSyncProject"
+
+    workspaces {
+      name = "CodeSyncProject"
+    }
+  }
 }
 provider "aws" {
   region = var.aws-region
