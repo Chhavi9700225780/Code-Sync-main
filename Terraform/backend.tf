@@ -7,13 +7,6 @@ terraform {
     }
   }
 
-  cloud {}
-}
-provider "aws" {
-  region = var.aws-region
-}
-
-terraform { 
   cloud { 
     
     organization = "CodeSyncProject" 
@@ -23,3 +16,7 @@ terraform {
     } 
   } 
 }
+provider "aws" {
+  region = var.aws-region
+}
+
